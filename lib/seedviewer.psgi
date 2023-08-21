@@ -110,9 +110,9 @@ return builder {
     if ($authenticate)
     {
 	enable_if {
-    print STDERR Dumper(\@_);
+		# print STDERR Dumper(\@_);
 	    my $key = $_[0]->{HTTP_AUTHORIZATION};
-	    return 0 if ($key && ($key eq $FIG_Config::sims_api_key));
+	    return 0 if ($key  && defined($FIG_Config::sims_api_key) && ($key eq $FIG_Config::sims_api_key));
 	    print STDERR Dumper($ip_check);
 	    return 0 if ($ip_check && $ip_check->allow($_[0]));
 	    1 } "Auth::Basic", authenticator => $authenticate;
