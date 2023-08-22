@@ -297,7 +297,7 @@ sub ajax_main
     if (! defined $ajaxError) {
 	Trace("Calling render method.") if T(3);
 	eval {
-	    print STDERR Dumper($app, $realPage, $sub_to_call, $cgi);    
+	    # print STDERR Dumper($app, $realPage, $sub_to_call, $cgi);    
 	    $result = &WebComponent::Ajax::render($app, $realPage, $sub_to_call, $cgi);
 	};
 	if ($@) {

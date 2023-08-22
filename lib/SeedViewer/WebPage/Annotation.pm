@@ -841,8 +841,8 @@ sub compared_region {
 		  $num_regions = $num_regions->[0];
 		  $size_regions = $size_regions->[0];
 		  if ($cgi->param('region_size') && $cgi->param('number_of_regions')) {
-		      $num_regions->value($cgi->param('number_of_regions'));
-		      $size_regions->value($cgi->param('region_size'));
+		      $num_regions->value(scalar $cgi->param('number_of_regions'));
+		      $size_regions->value(scalar $cgi->param('region_size'));
 		  }
 	      } else {
 		  $num_regions = $master->Preferences->create( { user => $user, name => 'ComparedRegionsNumRegions', value => $cgi->param('number_of_regions') || $nr } );
