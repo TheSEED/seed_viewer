@@ -11,6 +11,8 @@ use HTML;
 use Observation qw(get_objects);
 use SeedViewer::SeedViewer;
 
+use Carp::Always;
+
 use URI::Escape;
 
 use WebColors;
@@ -235,13 +237,13 @@ sub output {
         $gd_domain->display_titles(1);
 
 	# for pdb
-        my $gd_pdb = $self->application->component('GD_PDB');
-        $gd_pdb->width(400);
-        $gd_pdb->legend_width(100);
-        $gd_pdb->window_size($window_size+1);
-        $gd_pdb->line_height(14);
-        $gd_pdb->show_legend(1);
-        $gd_pdb->display_titles(1);
+        # my $gd_pdb = $self->application->component('GD_PDB');
+        # $gd_pdb->width(400);
+        # $gd_pdb->legend_width(100);
+        # $gd_pdb->window_size($window_size+1);
+        # $gd_pdb->line_height(14);
+        # $gd_pdb->show_legend(1);
+        # $gd_pdb->display_titles(1);
 
 	###########################################################################################
 
@@ -304,20 +306,20 @@ sub output {
                 my ($gd_local) = $thing->display($gd_local,$fig);
 		$cello_content = $thing->display_cello($fig);
             }
-	    elsif ($thing->type =~ /dom/){
-		my $thing_name = $thing->acc;
-		my $new_id;
-		if ($thing_name =~ /_/){
-		    ($new_id) = ($thing_name) =~ /(.*?)_/;
-		}
-		else{
-		    $new_id = $thing_name;
-		}
-
-		next if ($seen->{$new_id});
-		$seen->{$new_id}=1;
-                my ($gd_domain) = $thing->display($gd_domain,$fig);
-            }
+	    #	    elsif ($thing->type =~ /dom/){
+	    #	my $thing_name = $thing->acc;
+	    #	my $new_id;
+	    #	if ($thing_name =~ /_/){
+	    ##	    ($new_id) = ($thing_name) =~ /(.*?)_/;
+	    #	}
+	    #	else{
+	    #	    $new_id = $thing_name;
+	    #	}
+	    #
+	    #	next if ($seen->{$new_id});
+	    #	$seen->{$new_id}=1;
+	    #    my ($gd_domain) = $thing->display($gd_domain,$fig);
+	    #}
 #	    elsif ($thing->class eq "PDB"){
 #		my ($gd_pdb) = $thing->display($gd_pdb,$fig);
 #	    }

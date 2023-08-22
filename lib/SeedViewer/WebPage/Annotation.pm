@@ -860,8 +860,8 @@ sub compared_region {
 	      if (scalar(@$num_regions)) {
 		  $num_regions = $num_regions->[0];
 		  $size_regions = $size_regions->[0];	  
-		  $num_regions->value($cgi->param('number_of_regions'));
-		  $size_regions->value($cgi->param('region_size'));
+		  $num_regions->value(scalar $cgi->param('number_of_regions'));
+		  $size_regions->value(scalar $cgi->param('region_size'));
 	      }
 	      
 	  }

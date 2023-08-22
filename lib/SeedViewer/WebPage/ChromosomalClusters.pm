@@ -78,7 +78,7 @@ sub output {
   my $function_cell_colors = $self->function_cell_colors();
 
   # decode the data
-  my $decoded = $cgi->unescape($cgi->param('cc_data'));
+  my $decoded = $cgi->unescape(scalar $cgi->param('cc_data'));
   my @row_data = split /\^/, $decoded;
   my $group = '';
   my $first = 1;
@@ -540,7 +540,7 @@ sub annotate {
   my $user = $application->session->user;
 
   # allow data handler to detect private organisms
-  my @feature_ids_unfiltered = $cgi->param('fid');
+  my @feature_ids_unfiltered = $cgi->multi_param('fid');
   my @feature_ids;
   foreach my $id (@feature_ids_unfiltered) {
     my ($org_of_id) = $id =~ /^fig\|(\d+\.\d+)/;
