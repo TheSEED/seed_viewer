@@ -119,12 +119,17 @@ return builder {
 
     }
     mount "$base/FIG/Html" => $html;
+    mount "$base/Html" => $html;
     mount "$base/FIG-Tmp" => $tmp;
     mount "$base/FIG/p2p" => $p2p;
     mount "$base/FIG/seedviewer.cgi" => $sv;
+    mount "$base/seedviewer.cgi" => $sv;
     mount "$base/FIG/SubsysEditor.cgi" => $ss_editor;
+    mount "$base/SubsysEditor.cgi" => $ss_editor;
     mount "$base/FIG/ajax.cgi" => $ajax;
+    mount "$base/ajax.cgi" => $ajax;
     mount "$base/FIG" => $app;
+    mount "$base/" => $app;
     mount "$base/sims" => SimCompute->psgi_app;
    mount "$base/quit" => sub { exit };
 };
