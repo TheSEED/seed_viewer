@@ -83,7 +83,11 @@ my $ajax = CGI::Emulate::PSGI->handler(sub {
 my $ss_editor = CGI::Emulate::PSGI->handler(sub {
     CGI::initialize_globals();
     my $cgi = new CGI;
-    &subsys_editor_main($cgi);
+    eval { &subsys_editor_main($cgi); };
+    if ($@)
+    {
+	    print STDERR "ERROR in subsys_editor_main: $@";
+}
 });
 
 
@@ -254,6 +258,7 @@ sub main {
 	    print "Seedviewer error:\n$@\n";
 	}
     }
+    print STDERR "Exiting SV main $$\n";
 }
 
 sub ajax_main
@@ -323,6 +328,7 @@ sub ajax_main
     Tracer::TraceImages($result);
     Trace("Printing result.") if T(3);
     print $result;
+    print STDERR "Exiting ajax main $$\n";
 }
 
 sub subsys_editor_main
@@ -337,6 +343,7 @@ sub subsys_editor_main
     $menu->add_category( 'Home', 'SubsysEditor.cgi?page=SubsystemOverview' );
     $menu->add_category( 'Logout', 'SubsysEditor.cgi?page=Logout', undef, [ 'login' ] );
     
+    {
     my $WebApp = WebApplication->new( { id       => 'SubsystemEditor',
 					    menu     => $menu,
 					    layout   => $layout,
@@ -346,6 +353,8 @@ sub subsys_editor_main
     
     $WebApp->show_login_user_info(1);
     $WebApp->run();
+    }
+    print STDERR "Exiting SS main $$\n";
 }
 
 package MarkArgv;
