@@ -12,6 +12,7 @@ use BasicLocation;
 use Tracer;
 use FIG_Config;
 use File::Temp qw( tempfile );
+use Data::Dumper;
 
 =pod
 
@@ -41,8 +42,8 @@ sub init {
   $self->application->register_component('TabView', 'nav_tabview');
   $self->application->register_component('Table', 'FeatureTable');
   $self->application->register_component('GenomeBrowser', 'GB');
-#  $self->application->register_component('Table', 'UploadedList');
-#  $self->application->register_component('Table', 'ResultList');
+  $self->application->register_component('Table', 'UploadedList');
+  $self->application->register_component('Table', 'ResultList');
   $self->application->register_component('Ajax', 'BrowserAjax');
   
   return 1;
@@ -74,10 +75,12 @@ sub output {
     }
   }
   
+  # print STDERR Dumper(BrowseGenome => $cgi);
   # check for preselected location
   my ($sel_contig, $sel_start, $sel_end);
   if ($cgi->param('location')) {
     my ($org, $contig, $start, $end) = $cgi->param('location') =~ m/^(\d+\.\d+)_(.+)_(\d+)_(\d+)$/;
+    # print STDERR Dumper(LOC => $org, $contig, $start, $end);
     if (defined($org) && defined($contig) && defined($start) && defined($end)) {
       $org_id = $org;
       $sel_contig = $contig;
@@ -366,8 +369,6 @@ sub output {
   $help_component->hover_width("300");
   $help_component->text('Please upload plain text. The file must be tab separated and consist of four columns per row:<br><ul><li>Contig</li><li>Start</li><li>Stop</li><li>ID</li></ul>');
   $help_component->disable_wiki_link(1);
-  if (0)
-  {
   $upload_div .= "<b>Upload List</b>".$help_component->output();
   my $uploaded_list = $application->component('UploadedList');
   $uploaded_list->columns( [ { name => 'Contig', filter => 1 }, 'Start', 'Stop', 'ID', 'Region' ] );
@@ -387,7 +388,6 @@ sub output {
   $upload_div .= "</form>";
   $upload_div .= "<iframe name='upload_frame' style='width: 1px; height: 1px; border: none;'></iframe></div>";
   $nav_tab->add_tab('Upload List', $upload_div);
-}
   my $graphical_tab = "<table><tr><td>".$nav_tab->output."</td><td><div id='browser_div' style='margin-left: 5px;'>".$genome_browser->output."</td></tr>";
   $graphical_tab .= "<tr><td><div id='item_div'></div></td><td><div id='additional_div'></div></td></tr></table>";
   
