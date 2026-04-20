@@ -91,7 +91,7 @@ sub run_blast {
     # get cgi input parameters
     my $cgi       = $self->application->cgi();
     my $fasta     = $cgi->param('fasta');
-    my @genomes   = $cgi->param('organism');
+    my @genomes   = $cgi->multi_param('organism');
     my $seq_type  = $cgi->param('seq_type') || '';
     my $cutoff    = $cgi->param('evalue')   || 10;
     my $word_size = $cgi->param('wsize')    || 0;   # word size == 0 for default values
@@ -289,7 +289,7 @@ sub blast_form {
   $application->menu->add_entry('&raquo;Comparative Tools', 'Sequence based Comparison', '?page=MultiGenomeCompare&organism='.$cgi->param('organism'));
   $application->menu->add_entry('&raquo;Comparative Tools', 'Kegg Metabolic Analysis', '?page=Kegg&organism='.$cgi->param('organism'));
   $application->menu->add_entry('&raquo;Comparative Tools', 'BLAST search', '?page=BlastRun&organism='.$cgi->param('organism'));
-      $sel_org = $self->fig->genus_species($application->cgi->param('organism'));
+      $sel_org = $self->fig->genus_species(scalar $application->cgi->param('organism'));
       $sel_org_text = "";
     }
     my $html = "<h2>BLAST against $sel_org</h2><p style='width:800px;'>To BLAST against $sel_org\, paste a sequnce into the box below.$sel_org_text Please select whether you are pasting in nucleotides or amino acids. Then press the button labeled <b>BLAST</b>.</p>".$blast_form_component->output();
