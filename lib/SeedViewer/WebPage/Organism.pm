@@ -424,14 +424,14 @@ function show_additional () {
   $html .= $subsystem_information;
 
   my $gto_file = $fig->organism_directory($genome) . "/proc_genome.gto";
-  warn "GTO File = $gto_file\n";
+  # warn "GTO File = $gto_file\n";
   if (-f $gto_file)
   {
       $html .= add_gto_metadata($application, $gto_file);
   }
   else
   {
-      warn "No gto file $gto_file\n";
+	  # warn "No gto file $gto_file\n";
   }
 
   return $html;
