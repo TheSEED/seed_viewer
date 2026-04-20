@@ -309,7 +309,7 @@ sub get_spreadsheet {
       }
       my @presel_orgs = ();
       if ($cgi->param('organism')) {
-	@presel_orgs = $cgi->param('organism');
+	@presel_orgs = $cgi->multi_param('organism');
       }
       my $list_select = $application->component('ListSelect');
       $list_select->data($availables);
