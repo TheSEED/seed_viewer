@@ -111,6 +111,46 @@ if (1)
 
 return builder { 
     enable "Plack::Middleware::ReverseProxy";
+
+    if (0) {
+    enable "IPAddressFilter", rules => [
+	    '+ 0.0.0.0/0',
+'- 68.169.86.218',
+'- 35.230.127.150',
+'- 202.120.79.141', # doing deep paging into pathways
+# This batch is from crawlers on pubseed that aren't marked as crawlers
+'- 101.44.0.0/16',
+'- 101.46.0.0/16',
+'- 110.238.0.0/16',
+'- 111.119.0.0/16',
+'- 119.12.0.0/16',
+'- 119.13.0.0/16',
+'- 119.8.0.0/16',
+'- 121.91.0.0/16',
+'- 122.8.0.0/16',
+'- 124.243.0.0/16',
+'- 150.40.0.0/16',
+'- 159.138.0.0/16',
+'- 166.108.0.0/16',
+'- 170.106.0.0/16',
+'- 182.160.0.0/16',
+'- 183.87.0.0/16',
+'- 188.239.0.0/16',
+'- 189.1.0.0/16',
+'- 190.92.0.0/16',
+'- 27.106.0.0/16',
+'- 43.150.0.0/16',
+'- 43.135.0.0/16',
+'- 43.153.0.0/16',
+'- 46.250.0.0/16',
+'- 47.251.0.0/16',
+'- 47.254.0.0/16',
+'- 47.88.0.0/16',
+'- 49.0.0.0/16',
+'- 49.51.0.0/16',
+'- 94.74.0.0/16'
+    ];
+    }
     if ($authenticate)
     {
 	enable_if {
@@ -141,10 +181,12 @@ return builder {
 sub on_error
 {
     my($error) = @_;
-    
+
+    # Log the full error for debugging but don't expose to user
+    print STDERR "ERROR in on_error handler: $error\n";
     return(CGI::header() .
 	   CGI::start_html().
-	   '<pre>'.$error.'</pre>' .
+	   '<pre>An internal error occurred. Please try again later.</pre>' .
 	   CGI::end_html());
 }
 
@@ -254,8 +296,10 @@ sub main {
 	};
 	if ($@)
 	{
+	    # Log the full error for debugging but don't expose to user
+	    print STDERR "Seedviewer error: $@\n";
 	    print "Content-type: text/plain\n\n";
-	    print "Seedviewer error:\n$@\n";
+	    print "An internal error occurred. Please try again later.\n";
 	}
     }
     print STDERR "Exiting SV main $$\n";
@@ -323,7 +367,7 @@ sub ajax_main
 					  "color: #fff;",
 					  "background: #ff5555;",
 					  "border: 2px solid #ee2222;") },
-			   "Failure in component: $ajaxError");
+			   "Failure in component: An internal error occurred. Please try again later.");
     }
     Tracer::TraceImages($result);
     Trace("Printing result.") if T(3);
