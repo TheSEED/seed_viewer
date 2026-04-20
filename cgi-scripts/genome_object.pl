@@ -1,29 +1,3 @@
-#!/usr/bin/env /vol/mc-seed/FIGdisk/bin/run_perl
-
-BEGIN {
-    unshift @INC, qw(
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/FigKernelPackages
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/WebApplication
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/FortyEight
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/PPO
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/RAST
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/MGRAST
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/SeedViewer
-              /vol/mc-seed/FIGdisk/dist/releases/anon/common/lib/ModelSEED
-              /vol/mc-seed/FIGdisk/dist/anon/common/lib
-              /vol/mc-seed/FIGdisk/dist/anon/common/lib/FigKernelPackages
-              /vol/mc-seed/FIGdisk/config
- 
-);
-}
-use Data::Dumper;
-use Carp;
-use FIG_Config;
-$ENV{'BLASTMAT'} = "/vol/mc-seed/FIGdisk/BLASTMAT";
-$ENV{'FIG_HOME'} = "/vol/mc-seed/FIGdisk";
-# end of tool_hdr
-########################################################################
 use CGI;
 
 
