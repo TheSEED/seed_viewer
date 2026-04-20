@@ -484,7 +484,7 @@ sub get_pubmed_ids {
 
   # get the information for the ids at pubmed
   my $pubmed_data = [];
-  my $baseurl="http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=";
+  my $baseurl="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=";
   foreach my $id (keys(%$unique_ids)) {
     my $response = $request->get($baseurl.$id);
     my $result = $response->content;
