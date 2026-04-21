@@ -48,7 +48,7 @@ sub output {
     if (defined($FIG_Config::teacher_db)) {
 	$orf_master = DBMaster->new(-database => $FIG_Config::teacher_db, -backend => 'SQLite');
     }
-
+    #print STDERR Dumper(ContigView => $cgi);
     my $genome_id = $cgi->param('organism');
     my $feature = $cgi->param('feature');
     my $contig_name = $cgi->param('contig');

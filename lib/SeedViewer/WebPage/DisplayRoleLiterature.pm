@@ -6,6 +6,7 @@ use URI::Escape;
 use HTML;
 use Data::Dumper;
 use LWP;
+use CGI;
 
 use FIG;
 
@@ -105,9 +106,12 @@ sub output {
 
   $content .= "<H2>Role Info</H2>";
   $content .= "<TABLE><TR>";
-  $content .= "<TD><B>Subsystem: </B></TD><TD> $subsys_name</TD>\n";
+  # HTML encode parameters to prevent XSS (TIKI-W094-V3-14)
+  my $safe_subsys_name = CGI::escapeHTML($subsys_name);
+  my $safe_role = CGI::escapeHTML($role);
+  $content .= "<TD><B>Subsystem: </B></TD><TD> $safe_subsys_name</TD>\n";
   $content .= "</TR><TR>";
-  $content .= "<TD><B>Functional Role: </B></TD><TD> $role</TD>\n";
+  $content .= "<TD><B>Functional Role: </B></TD><TD> $safe_role</TD>\n";
   $content .= "</TR></TABLE>";
 
 
