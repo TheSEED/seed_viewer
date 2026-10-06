@@ -408,7 +408,8 @@ function sh_aliases2 () {
   $propagation_lock .= " <a href='$toggle_lock_link'>Toggle lock</a>";
   $propagation_lock .= "</td>";
 
-  my $structure_link = "<th>CDD link</th><td>" . cdd_search_link($id, $protein) . "</td>";
+  my $plink = uri_escape(">$id\n$protein");
+  my $structure_link = "<th>CDD link</th><td><a target='_blank' href='http://www.ncbi.nlm.nih.gov/Structure/cdd/wrpsb.cgi?SEQUENCE=$plink&FULL'>show cdd</a></td>";
 
   my $vbi_idH = $fig->fids_to_patric([$id]);
 
