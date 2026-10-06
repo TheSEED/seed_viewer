@@ -218,8 +218,7 @@ sub output {
 	}
 
 	my $protein = $fig->get_translation($peg);
-	my $plink = uri_escape(">$peg\n$protein");
-	my $structure_link = "<a target='_blank' href='http://www.ncbi.nlm.nih.gov/Structure/cdd/wrpsb.cgi?SEQUENCE=$plink&FULL'>show cdd</a>";
+	my $structure_link = cdd_search_link($peg, $protein);
 
 	my $radio = "<input type='radio' name='set_function' value='$func'>";
 	push(@to_show, [$link, $func, $ec_link, $structure_link, $radio]);
