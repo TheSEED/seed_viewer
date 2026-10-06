@@ -743,6 +743,11 @@ function sh_aliases2 () {
   if ($cgi->param('region_size')) {
     $args .= "&region_size=".$cgi->param('region_size');
   }
+  # Only the first, lazy-loaded draw needs this carried over; afterwards the
+  # ajax source is the pr_form id and the checkbox submits itself.
+  if ($cgi->param('show_cdd')) {
+    $args .= "&show_cdd=1";
+  }
   if ($cgi->param('number_of_regions')) {
     $args .= "&number_of_regions=".$cgi->param('number_of_regions');
   }
