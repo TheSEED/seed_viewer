@@ -465,8 +465,7 @@ function sh_aliases2 () {
   $propagation_lock .= " <a href='$toggle_lock_link'>Toggle lock</a>";
   $propagation_lock .= "</td>";
 
-  my $plink = uri_escape(">$id\n$protein");
-  my $structure_link = "<th>CDD link</th><td><a target='_blank' href='http://www.ncbi.nlm.nih.gov/Structure/cdd/wrpsb.cgi?SEQUENCE=$plink&FULL'>show cdd</a></td>";
+  my $structure_link = "<th>CDD link</th><td>" . cdd_search_link($id, $protein) . "</td>";
 
   my $vbi_idH = $fig->fids_to_patric([$id]);
 
@@ -742,6 +741,11 @@ function sh_aliases2 () {
   }
   if ($cgi->param('region_size')) {
     $args .= "&region_size=".$cgi->param('region_size');
+  }
+  # Only the first, lazy-loaded draw needs this carried over; afterwards the
+  # ajax source is the pr_form id and the checkbox submits itself.
+  if ($cgi->param('show_cdd')) {
+    $args .= "&show_cdd=1";
   }
   if ($cgi->param('number_of_regions')) {
     $args .= "&number_of_regions=".$cgi->param('number_of_regions');
