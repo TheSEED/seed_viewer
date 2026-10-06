@@ -5,58 +5,15 @@ use warnings;
 
 use base qw( Exporter );
 
-use URI::Escape;
-
 our @EXPORT = qw ( get_menu_metagenome get_menu_organism get_settings_for_dataset dataset_is_phylo dataset_is_metabolic
 		  is_public_metagenome get_public_metagenomes get_pmed_info
-		  user_can_annotate_genome annotation_username
-		  cdd_search_link);
+		  user_can_annotate_genome annotation_username);
 
 eval {
   require FortyEightMeta::SimDB;
 };
 
 1;
-
-=head3 cdd_search_link
-
-    my $html = cdd_search_link($id, $seq);
-    my $html = cdd_search_link($id, $seq, $label);
-
-Return an anchor that runs an NCBI Conserved Domain search for a single
-protein. Returns the empty string if there is no sequence.
-
-We target C<Structure/bwrpsb/bwrpsb.cgi> (Batch CD-Search) rather than the
-older C<Structure/cdd/wrpsb.cgi>: wrpsb.cgi now answers with a reCAPTCHA
-interstitial for both GET and POST, so a plain link to it is dead. bwrpsb.cgi
-is not gated and accepts the query as an ordinary GET.
-
-Keeping this a link rather than a form is deliberate. Several callers render
-their output inside an enclosing <form> (the PGInconsistent* pages put it in a
-make_table cell between start_form('role_form') and end_form; Annotation.pm
-sits after an unclosed propagation_lock_form). A nested <form> is invalid HTML
--- the parser drops the inner tag and adopts its inputs into the outer form --
-so a form here would both fail to submit and corrupt the enclosing one.
-
-The cost of GET is a URL-length ceiling: NCBI answers 414 once the request
-passes roughly 8 KiB, measured between 7380 residues (ok) and 8200 (414).
-Proteins that long are vanishingly rare here, and the failure is visible
-rather than silent.
-
-=cut
-
-sub cdd_search_link {
-    my($id, $seq, $label) = @_;
-
-    return '' unless defined($seq) && length($seq);
-    $label = 'show cdd' unless defined($label);
-
-    my $queries = uri_escape(">$id\n$seq");
-    my $url = "https://www.ncbi.nlm.nih.gov/Structure/bwrpsb/bwrpsb.cgi"
-	    . "?queries=$queries&db=cdd&smode=auto&evalue=0.01&maxhit=500";
-
-    return "<a target='_blank' href='$url'>$label</a>";
-}
 
 sub user_can_annotate_genome
 {
