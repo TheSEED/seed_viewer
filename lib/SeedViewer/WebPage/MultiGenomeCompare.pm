@@ -79,6 +79,16 @@ sub output {
   $self->organisms(\@organisms);
   $cgi->param('organism', (@organisms, $org));
 
+  # Security: reference and comparison organism ids are reflected into the page
+  # (headings, links, iframe src); require the expected genome-id format and
+  # reject anything else (CWE-79).
+  for my $g (grep { defined($_) && $_ ne '' } ($org, @organisms)) {
+    unless ($g =~ /^\d+\.\d+$/) {
+      $application->add_message('warning', 'Invalid organism id');
+      return "";
+    }
+  }
+
   # reference organism select
   my $user = $application->session->user();
   my $ref_org_select = $application->component('ReferenceOrganism');

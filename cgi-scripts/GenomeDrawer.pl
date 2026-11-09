@@ -32,18 +32,34 @@ $self->{scale} = $self->{width} / $self->{window_size};
 
 # load data
 my $fn = $cgi->param('file');
-if (open(FH, $fn)) {
+
+# Validate before opening: reject values that are undefined, contain shell
+# metacharacters, or attempt path traversal. Two-argument open treats names
+# ending/starting with '|' as shell commands; three-argument open below
+# eliminates that entirely, but this check is an additional defense layer.
+unless (defined($fn)
+        && $fn !~ /[|;&`\$\n\r<>]/
+        && $fn !~ /\.\./
+        && -f $fn) {
+  print $cgi->header();
+  print "invalid or missing file parameter";
+  exit 0;
+}
+
+# Use three-argument open with an explicit '<' mode so that Perl never
+# interprets $fn as a shell command, regardless of its content.
+if (open(my $FH, '<', $fn)) {
   my $data = [];
   my $config = [];
   my $hdr = 0;
   my $i = 0;
-  while (<FH>) {
+  while (<$FH>) {
     my $line = $_;
     chomp $line;
     if ($line eq "//") {
       push(@{$self->{lines}}, { data => $data->[$i], config => $config->[$i] });
       $i++;
-      $hdr = <FH>;
+      $hdr = <$FH>;
       chomp $hdr;
       my ($abbr, $beg, $end) = split(/\t/, $hdr);
       $config->[$i]->{short_title} = $abbr;
@@ -77,11 +93,11 @@ if (open(FH, $fn)) {
 		    'title' => $popup });
     }
   }
-  close FH;
+  close $FH;
   push(@{$self->{lines}}, { data => $data->[$i], config => $config->[$i] });
 } else {
   print $cgi->header();
-  print "could not open file $fn: $! $@";
+  print "could not open file: $!";
   exit 0;
 }
 

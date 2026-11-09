@@ -72,6 +72,12 @@ sub output {
     }
 
     my $peg          = $cgi->param('feature');
+    # Security: the feature id is reflected into the page heading/links; require
+    # the canonical FIG feature-id format and reject anything else (CWE-79).
+    unless (defined($peg) && $peg =~ /^fig\|\d+\.\d+\.[A-Za-z_]+\.\d+$/) {
+	$application->add_message('warning', 'Invalid feature id');
+	return "";
+    }
     my $genome       = $fig->genome_of($peg);
     my $genome_name  = $fig->genus_species($genome);
     my $peg_link     = qq(<a href="?page=Annotation&feature=$peg">$peg</a>);
@@ -118,6 +124,8 @@ sub homolog_cluster_table {
     # a single peg (the one with the best sim score) is reported.
 
     my $peg = $cgi->param('feature');
+    # Security: feature id reflected into the page; require canonical FIG format (CWE-79).
+    return "<h3>Invalid feature id</h3>" unless (defined($peg) && $peg =~ /^fig\|\d+\.\d+\.[A-Za-z_]+\.\d+$/);
     my $genome = $fig->genome_of($peg);
     $seen{$genome} = 1;
 

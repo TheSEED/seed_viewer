@@ -113,7 +113,8 @@ sub show_form
 <input type="hidden" name="act" value="do_search">
 <input type="hidden" name="page" value="Find">
 END
-    $html .= qq(<input type="text" size="100" name="pattern" value="$val">\n);
+    my $safe_val = CGI::escapeHTML(defined($val) ? $val : '');
+    $html .= qq(<input type="text" size="100" name="pattern" value="$safe_val">\n);
 $html .= <<'END';
 <br>
 <input type="submit" name="submit" value="Search">
@@ -190,7 +191,7 @@ sub do_search
 <input type="hidden" name="page_start" value="$next">
 <input type="hidden" name="page_size" value="$page_size">
 <input type="hidden" name="index" value="$idx_name">
-<input type="hidden" name="pattern" value="$pattern">
+<input type="hidden" name="pattern" value="@{[ CGI::escapeHTML($pattern) ]}">
 <input type="submit" name="more" value="More results">
 </form>
 END

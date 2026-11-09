@@ -77,7 +77,7 @@ sub output {
     # make sure that the user has access to the comparison organisms
     my %ok_genome = map {$_->[0] => 1} @$genome_list;
     my @comparison_organisms = $cgi->param('sim_display_list_in');
-    @comparison_organisms = grep {exists $ok_genome{$_}} @comparison_organisms;
+    @comparison_organisms = grep { defined($_) && exists $ok_genome{$_} } @comparison_organisms;
 
     # load select mg component
     my $MGSelect = $self->application->component('MGSelect');
@@ -185,7 +185,7 @@ sub output {
     my $map_data;
     my $ec_table = '';
 
-    my $hidden;
+    my $hidden = '';
     my $headline = "<h2>Please select an organism  and a map to display</h2>";
     if ( $genome )
     {
@@ -203,7 +203,7 @@ sub output {
 	    }
 	    else   # $system is 'rast' or 'mgrast'
 	    {
-		if ( $org == $fig->{_genome} ) 
+		if ( defined($org) && $org ne '' && defined($fig->{_genome}) && $org == $fig->{_genome} )
 		{
 		    $fignew = $fig;
 		} 
@@ -442,17 +442,12 @@ sub all_genome_list {
     my @genome_list = ();
     my %org_seen;
 
-    # get the list of public metagenomes
-    my $public_metagenomes = [];
-    if ( ref $rast ) {
-	$public_metagenomes = &get_public_metagenomes($application->dbmaster, $rast);
-
-	foreach my $rec ( @$public_metagenomes ) {
-	    $org_seen{$rec->[0]} = 1;
-	}
-    }
-
-    @genome_list = map {$_->[1] = "Public: $_->[1]"; $_} sort {$a->[1] cmp $b->[1]} @$public_metagenomes;
+    # NOTE 2026-11-05: get_public_metagenomes() is MG-RAST functionality and is
+    # not used on RAST. Calling it here loaded all ~1.5M viewable jobs per
+    # request (PPO full-table load) and made page=Kegg take ~160 s, which is
+    # what wedged the worker pool via elm's 60 s proxy_read_timeout. The picker
+    # below now lists only the public SEED genomes plus the logged-in user's own
+    # private organisms (admins still get all via the '*' branch below).
 
     # check for private genomes (RAST) or metagenomes (MG-RAST)
     # for now, public metagenomes get reported here as private, remove them

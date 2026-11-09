@@ -5,7 +5,8 @@ package ToolBox::WebPage::IDMapping;
 use strict;
 use warnings;
 
-use AnnoClearinghouse;
+# AnnoClearinghouse module is not shipped in this tree; construct it lazily and
+# tolerate its absence (this page is not dispatched by the RAST seedviewer).
 use FIG;
 
 use Mail::Mailer;
@@ -27,7 +28,7 @@ sub init {
   
   #init fig first
   my $fig = new FIG;
-  my $ach = AnnoClearinghouse->new( "/vol/clearinghouse/v12" , "/vol/clearinghouse/contrib" , 1);
+  my $ach = eval { AnnoClearinghouse->new( "/vol/clearinghouse/v12" , "/vol/clearinghouse/contrib" , 1) };
 
   my $achDB = DBKernel->new('mysql', 'fig_anno_v5', 'ach', undef, undef, 'anno-3.nmpdr.org');	
   
@@ -338,7 +339,7 @@ sub mapID{
   
   unless (scalar (@ids_seq) ){
     print "ACH:\n";
-    foreach my $line (  $aclh->lookup_id( $ext_id) ){
+    foreach my $line ( $aclh ? $aclh->lookup_id( $ext_id) : () ){
       foreach my $entry (@$line){
 	#print scalar @$entry , "\n";
 	#print join "\t" , @$entry , "\n" if (scalar @$entry);

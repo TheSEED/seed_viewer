@@ -92,7 +92,14 @@ sub output {
       return "";
     }
   }
-  
+
+  # Security: the organism id is reflected into the page heading; require the
+  # expected genome-id format and reject anything else (CWE-79).
+  if (defined($org_id) && $org_id ne '' && $org_id !~ /^\d+\.\d+$/) {
+    $application->add_message('warning', 'Invalid organism id');
+    return "";
+  }
+
   my $fig = $application->data_handle('FIG');
   
   # check if we have a valid fig
@@ -436,7 +443,7 @@ sub redraw {
     my @regions = split /~/, $coloring;
     foreach my $region (@regions) {
       my ($contig, $start, $stop, $id) = split /\*/, $region;
-      push(@$data, [$id, 'user defined', $contig, $start, $stop, abs($start - $stop) + 1, '-', '-']);
+      push(@$data, [$id, 'user defined', $contig, $start, $stop, abs(($start // 0) - ($stop // 0)) + 1, '-', '-']);
     }
   }
   
