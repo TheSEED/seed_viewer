@@ -7,7 +7,8 @@ use warnings;
 
 use base qw( WebPage );
 
-use AnnoClearinghouse;
+# AnnoClearinghouse module is not shipped in this tree; the page fetches results
+# over HTTP via LWP::Simple instead (see output()).
 use FIG_Config;
 use FIG;
 use LWP::Simple;
@@ -27,8 +28,6 @@ sub output {
   my ($self) = @_;
  
   my $application = $self->application;
-#  my $anno = new AnnoClearinghouse($FIG_Config::clearinghouse_data,
-#				   $FIG_Config::clearinghouse_contrib);
 
   my $fig = $self->application->data_handle('FIG');
   my $category = $self->application->cgi->param('category') || 'identifier';

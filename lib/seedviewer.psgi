@@ -16,6 +16,9 @@ use Data::Dumper;
 
 
 require CGI::Emulate::PSGI;
+require CGI;
+
+$CGI::LIST_CONTEXT_WARN = 0;
 
 use SimCompute;
 
@@ -157,7 +160,7 @@ return builder {
 		# print STDERR Dumper(\@_);
 	    my $key = $_[0]->{HTTP_AUTHORIZATION};
 	    return 0 if ($key  && defined($FIG_Config::sims_api_key) && ($key eq $FIG_Config::sims_api_key));
-	    print STDERR Dumper($ip_check);
+	    #print STDERR Dumper($ip_check);
 	    return 0 if ($ip_check && $ip_check->allow($_[0]));
 	    1 } "Auth::Basic", authenticator => $authenticate;
 
@@ -302,7 +305,7 @@ sub main {
 	    print "An internal error occurred. Please try again later.\n";
 	}
     }
-    print STDERR "Exiting SV main $$\n";
+    #print STDERR "Exiting SV main $$\n";
 }
 
 sub ajax_main
@@ -372,7 +375,7 @@ sub ajax_main
     Tracer::TraceImages($result);
     Trace("Printing result.") if T(3);
     print $result;
-    print STDERR "Exiting ajax main $$\n";
+    #print STDERR "Exiting ajax main $$\n";
 }
 
 sub subsys_editor_main
@@ -398,7 +401,7 @@ sub subsys_editor_main
     $WebApp->show_login_user_info(1);
     $WebApp->run();
     }
-    print STDERR "Exiting SS main $$\n";
+    #print STDERR "Exiting SS main $$\n";
 }
 
 package MarkArgv;
@@ -406,6 +409,15 @@ use strict;
 use parent qw(Plack::Middleware);
 use Time::HiRes 'gettimeofday';
 use Data::Dumper;
+
+# local-time timestamp with millisecond precision, e.g. 2026-11-09 12:35:22.041
+sub _ts {
+    my $t = shift // Time::HiRes::time();
+    my @lt = localtime($t);
+    return sprintf("%04d-%02d-%02d %02d:%02d:%02d.%03d",
+                   $lt[5] + 1900, $lt[4] + 1, $lt[3], $lt[2], $lt[1], $lt[0],
+                   int(($t - int($t)) * 1000));
+}
 
 sub new
 {
@@ -427,9 +439,18 @@ sub call {
     my $tag = sprintf("%-05s", $self->{tag});
     $0 = "$c $tag $self->{name}";
     my $start = gettimeofday;
+    my $req_uri = $env->{REQUEST_URI} // '';
+    my $req_ref = $env->{HTTP_REFERER} // '';
+    my $req_ip  = $env->{REMOTE_ADDR} // '';
+    my $req_xff = $env->{HTTP_X_FORWARDED_FOR} // '';
+    $req_uri =~ s/[\r\n]/ /g;
+    $req_ref =~ s/[\r\n]/ /g;
+    $req_ip  =~ s/[\r\n]/ /g;
+    $req_xff =~ s/[\r\n]/ /g;
+    printf STDERR "[%s] [REQ] pid=%d tag=%s ip=%s xff=%s uri=%s ref=%s\n", _ts($start), $$, $self->{tag}, $req_ip, $req_xff, $req_uri, $req_ref;
     my $res = $self->app->($env);
     my $end = gettimeofday;
-    printf STDERR "$self->{tag} %.3f\n", 1000 * ($end - $start);
+    printf STDERR "[%s] %s %.3f\n", _ts($end), $self->{tag}, 1000 * ($end - $start);
     $0 = "$c IDLE  $self->{name}";
     return $res;
 }

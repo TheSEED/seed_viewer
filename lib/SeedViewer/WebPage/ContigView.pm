@@ -144,7 +144,7 @@ sub output {
 # 	}
 
 	# contig location is of form locus_beg_end
-	my @contig_location_f = ($contig . "_" . $start . "_" . $stop);
+	my @contig_location_f = (($contig // '') . "_" . ($start // '') . "_" . ($stop // ''));
 
 	# call genes in region
 	my (%forward_features, %reverse_features);

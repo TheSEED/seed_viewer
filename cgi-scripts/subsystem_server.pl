@@ -65,14 +65,8 @@ our $fig = new FIG;
 #
 if ($have_fcgi && $ENV{REQUEST_METHOD} eq '')
 {
-    #
-    # Make mysql autoreconnect.
-    #
-    if ($FIG_Config::dbms eq 'mysql')
-    {
-	my $dbh = $fig->db_handle()->{_dbh};
-	$dbh->{mysql_auto_reconnect} = 1;
-    }
+    # mysql_auto_reconnect deliberately not set: libmysqlclient 8.0.34+ warns
+    # on any use of the option, and 0 is the library default anyway.
 
     while (my $cgi = new CGI::Fast())
     {

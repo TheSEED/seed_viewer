@@ -86,8 +86,8 @@ sub output {
     chomp;
     my($peg1I,$peg1,$type,$contig2I,$peg2I,$peg2,$iden,$mousetext) = split(/\t/,$_);
     my ($contig, $beg2) = $mousetext =~ /location:\s(.+)\s(\d+)\s/;
-    if ($peg2) {
-      push(@$data, [$beg2 + $starts_b->{$contig}, $pegs_a->{$peg1} + $starts_a->{$peg2contig->{$peg1}} ]);
+    if ($peg2 && defined $contig && defined $beg2) {
+      push(@$data, [($beg2 // 0) + ($starts_b->{$contig} // 0), ($pegs_a->{$peg1} // 0) + ($starts_a->{$peg2contig->{$peg1}} // 0) ]);
     }
   }
   close(OTHER);

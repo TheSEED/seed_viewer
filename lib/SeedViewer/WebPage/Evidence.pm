@@ -11,7 +11,7 @@ use HTML;
 use Observation qw(get_objects);
 use SeedViewer::SeedViewer;
 
-use Carp::Always;
+#use Carp::Always;
 
 use URI::Escape;
 
@@ -44,6 +44,14 @@ sub output {
 
     foreach my $key ($cgi->param) {
 	$state->{$key} = $cgi->param($key);
+    }
+
+    # Security: the feature id is reflected into the page in several places;
+    # require the canonical FIG feature-id format and reject anything else (CWE-79).
+    if (defined($cgi->param('feature')) && $cgi->param('feature') ne ''
+        && $cgi->param('feature') !~ /^fig\|\d+\.\d+\.[A-Za-z_]+\.\d+$/) {
+        $application->add_message('warning', 'Invalid feature id');
+        return "";
     }
 
     if ( ($cgi->param('Align Selected')) || ($cgi->param('Fasta Download Selected') ) ) {
@@ -354,7 +362,7 @@ sub output {
 	$visual_protein_content .= qq(<br><br><b>Localization</b><br>);
 	if ((scalar @{($gd_local->{lines})} > 0) || ($cello_content)){
 	    $visual_protein_content .= $gd_local->output;
-	    $visual_protein_content .= $cello_content;
+	    $visual_protein_content .= ($cello_content // '');
 	}
 	else{
 	    $visual_protein_content .= "<p>No hits found</p>";
@@ -697,7 +705,11 @@ sub output {
 
 sub evidence_header {
     my ($fid,$fig,$annotation,$comment) = @_;
-    
+
+    # Security: $fid is reflected into the header HTML below; require the
+    # canonical FIG feature-id format and refuse to render otherwise (CWE-79).
+    return "" if (!defined($fid) || $fid !~ /^fig\|\d+\.\d+\.[A-Za-z_]+\.\d+$/);
+
     # prepare information
     my $function = $fig->function_of($fid);
     my $genome = $fig->genome_of($fid);

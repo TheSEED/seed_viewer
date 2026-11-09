@@ -80,6 +80,13 @@ sub output {
   # check where we are coming from
   my $org_name = "";
   my $org_id = $cgi->param('organism');
+
+  # Reject organism IDs that don't match the expected \d+\.\d+ format.
+  if (defined($org_id) && $org_id !~ /^\d+\.\d+$/) {
+    $application->add_message('warning', 'Invalid organism id');
+    return "";
+  }
+
   if ($org_id) {
     $org_name = $fig->genus_species($org_id);
     $org_name =~ s/_/ /g;

@@ -117,7 +117,14 @@ sub output {
   }
 
   my $id = $cgi->param('feature');
-  
+
+  # Security: validate the feature id against a strict allowlist before it
+  # reaches the database layer (CWE-89). Expected form is a FIG feature id,
+  # e.g. "fig|83333.1.peg.4". Reject anything else outright.
+  unless (defined($id) && $id =~ /^fig\|\d+\.\d+\.[A-Za-z_]+\.\d+$/) {
+    return "<div><h2>Annotation Overview</h2><p><strong>You have used an invalid identifier to link to the SEED Viewer</strong>.</p><p>Valid IDs are of the form:<br/>fig|&lt;taxonomy_id&gt;.&lt;seed_version_number&gt;.peg.&lt;peg_number&gt;<br/><em>Example: fig|83333.1.peg.4</em></p><p>To search the SEED Viewer please use the <a href='".$application->url."?page=Home'>start page</a>.</p>";
+  }
+
   # check if this is an existing feature
   if (! $fig->is_real_feature($id)) {
     if (FIGRules::nmpdr_mode($cgi)) {
@@ -465,7 +472,7 @@ function sh_aliases2 () {
   $propagation_lock .= " <a href='$toggle_lock_link'>Toggle lock</a>";
   $propagation_lock .= "</td>";
 
-  my $plink = uri_escape(">$id\n$protein");
+  my $plink = uri_escape(">$id\n" . ($protein // ''));
   my $structure_link = "<th>CDD link</th><td><a target='_blank' href='http://www.ncbi.nlm.nih.gov/Structure/cdd/wrpsb.cgi?SEQUENCE=$plink&FULL'>show cdd</a></td>";
 
   my $vbi_idH = $fig->fids_to_patric([$id]);
@@ -537,10 +544,11 @@ function sh_aliases2 () {
   my $tax_info = "<th>taxonomy id</th><td>$ncbi_link</td>";
   my $contig_info = "<th>contig</th><td>$contig</td>";
   my $internal_links = "<th>internal links</th><td><a href='".$application->url."?page=BrowseGenome&feature=$id'>genome browser</a> | <a href='".$application->url."?page=Evidence&feature=$id'>feature evidence</a> | <a href='".$application->url."?page=ShowSeqs&feature=$id&Sequence=DNA%20Sequence' target=_blank>sequence</a></td>";
-  my $aclh_info = "<th>ACH".$aclh_help->output()."</th><td><a href='".$application->url."?page=ACHresults&query=$id' target=_blank>show essentially identical genes</a></td>";
-  if ((ref($fig) eq 'FIGV') || ((ref($fig) eq 'FIGM') && exists($fig->{_figv_cache}->{$org}))) {
-    $aclh_info = "";
-  }
+  #my $aclh_info = "<th>ACH".$aclh_help->output()."</th><td><a href='".$application->url."?page=ACHresults&query=$id' target=_blank>show essentially identical genes</a></td>";
+  #if ((ref($fig) eq 'FIGV') || ((ref($fig) eq 'FIGM') && exists($fig->{_figv_cache}->{$org}))) {
+  #  $aclh_info = "";
+  #}
+  my $aclh_info = "";
 
   my $dlit_links = "";
   if (scalar(@$dlits) || $can_alter) {
@@ -730,18 +738,22 @@ function sh_aliases2 () {
   # Add seed_user -- this should be temporary, until SEED gets retired 
   my $seed_user = $cgi->param('user') || '';
   
-  my $args = "feature=$id";
+  # Security: $args is reflected into an inline execute_ajax() onload handler
+  # below; URL-encode every value so it cannot break out of the JS string /
+  # HTML attribute (CWE-79). HTML-encoding the whole string is wrong here as it
+  # would corrupt the '&' parameter separators.
+  my $args = "feature=".uri_escape($id);
   if ( $seed_user ) {
-    $args .= "&user=$seed_user";
+    $args .= "&user=".uri_escape($seed_user);
   }
   if ($cgi->param('show_genome')) {
     my @sgenomes = $cgi->param('show_genome');
     foreach my $sg (@sgenomes) {
-      $args .= "&show_genome=$sg";
+      $args .= "&show_genome=".uri_escape($sg);
     }
   }
   if ($cgi->param('region_size')) {
-    $args .= "&region_size=".$cgi->param('region_size');
+    $args .= "&region_size=".uri_escape(scalar $cgi->param('region_size'));
   }
   # Only the first, lazy-loaded draw needs this carried over; afterwards the
   # ajax source is the pr_form id and the checkbox submits itself.
@@ -749,13 +761,13 @@ function sh_aliases2 () {
     $args .= "&show_cdd=1";
   }
   if ($cgi->param('number_of_regions')) {
-    $args .= "&number_of_regions=".$cgi->param('number_of_regions');
+    $args .= "&number_of_regions=".uri_escape(scalar $cgi->param('number_of_regions'));
   }
   if ($cgi->param('sim_cutoff')) {
-    $args .= "&sim_cutoff=".$cgi->param('sim_cutoff');
+    $args .= "&sim_cutoff=".uri_escape(scalar $cgi->param('sim_cutoff'));
   }
   if ($cgi->param('color_sim_cutoff')) {
-    $args .= "&color_sim_cutoff=".$cgi->param('color_sim_cutoff');
+    $args .= "&color_sim_cutoff=".uri_escape(scalar $cgi->param('color_sim_cutoff'));
   }
 
 #   my @at_ids = &in_ali_trees($id);
@@ -1014,6 +1026,14 @@ sub toggle_lock {
   my $user = $application->session->user;
   my $fig = $application->data_handle('FIG');
   my $feature = $cgi->param('feature');
+
+  # Security: validate the feature id against a strict allowlist before it
+  # reaches the database layer (CWE-89). This action handler runs ahead of
+  # output(), so it must guard its own input. Expected: "fig|83333.1.peg.4".
+  unless (defined($feature) && $feature =~ /^fig\|\d+\.\d+\.[A-Za-z_]+\.\d+$/) {
+    return;
+  }
+  return unless $user;   # propagation locks are recorded against a login
 
   if ($fig->is_propagation_locked_fid($feature))
   {

@@ -83,7 +83,7 @@ sub output {
   $/ = "\n//\n";
   my @tools = grep { $_ =~ /^$tool\n/ } `cat $FIG_Config::global/LinksToTools`;
   unless (@tools == 1) {
-    $application->add_message('warning', "Tool $tool not found.");
+    $application->add_message('warning', "Tool ".CGI::escapeHTML($tool)." not found.");
     return "";
   }
   Trace("Tool $tool found.") if T(3);

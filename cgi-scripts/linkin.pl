@@ -169,7 +169,7 @@ sub main {
 			    $target_type=DISAMBIGUATIONPAGE;
 			    $target_params->{possibles} = $possibles;
 			} else {
-			   push @$warnings, "No fig id found for '".$cgi->param($param)."'."; 
+			   push @$warnings, "No fig id found for '".$cgi->escapeHTML($cgi->param($param))."'.";
 			}
 		    }
 		    elsif ($target_name eq 'organism') {
@@ -215,7 +215,7 @@ sub main {
 		    }
 		}
 		else {
-		    push @$warnings, "Parameter '$param' has no value.";
+		    push @$warnings, "Parameter '".$cgi->escapeHTML($param)."' has no value.";
 		}
 	    }
 
@@ -223,7 +223,7 @@ sub main {
 	    else {
 
 		if (HALT_ON_BAD_PARAM) {
-		    push @$warnings, "Parameter '$param' is not allowed.";
+		    push @$warnings, "Parameter '".$cgi->escapeHTML($param)."' is not allowed.";
 		}
 
 	    }

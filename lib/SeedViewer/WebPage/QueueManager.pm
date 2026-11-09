@@ -81,7 +81,7 @@ sub output {
     # Use a hidden form to pass parameters, add/remove models, etc.
     $html .= "<form method='post' id='modelviewparams' action='seedviewer.cgi' enctype='multipart/form-data'>\n";
     $html .= "  <input type='hidden' id='page' name='page' value='QueueManager'>\n";
-    $html .= "  <input type='hidden' id='tab' name='tab' value='".$cgi->param('tab')."'>\n";
+    $html .= "  <input type='hidden' id='tab' name='tab' value='".CGI::escapeHTML($cgi->param('tab'))."'>\n";
     $html .= "</form>\n";
 
     # Build data tabs for the tables section

@@ -173,7 +173,7 @@ sub output {
     $ss_description = undef;
   }
 
-  $html .= "<p style='width: 800px; text-align: justify;'><i>This subsystem's description is:</i></p><p style=\"padding: 0em 0em 0em 2em\">$ss_description</p><p style='width: 800px; text-align: justify;'>For more information, please check out the description and the additional notes tabs, below</p>";
+  $html .= "<p style='width: 800px; text-align: justify;'><i>This subsystem's description is:</i></p><p style=\"padding: 0em 0em 0em 2em\">" . ($ss_description // '') . "</p><p style='width: 800px; text-align: justify;'>For more information, please check out the description and the additional notes tabs, below</p>";
 
   # get the subsystem notes
   my $ss_notes = $subsystem->get_notes() || "";
@@ -197,7 +197,7 @@ sub output {
     my $row=0;
     foreach my $id (keys %references) {
 	    unless ($row == 0) {$html .= "<tr>"; $row++} # we don't want to add a <tr> on the first row, but we do on all subsequent rows.
-	    my $citation = join(" ", map { $oi->{$id}->{$_}} (qw[title author journal date]));
+	    my $citation = join(" ", map { $oi->{$id}->{$_} // '' } (qw[title author journal date]));
 	    $html .= "<td>$citation</td>";
 	    $html .= "<td><a href='".HTML::alias_url($id, 'PMID')."' target=_blank>".$id."</a></td></tr>";
     }
@@ -234,7 +234,7 @@ sub output {
   if (@scenario_names > 0 && $scenario_names[0] ne '') {
     $tabview->add_tab('Scenarios', "<div id='scenarios_tab'>".$self->get_scenarios()."</div>");
 
-    if ($cgi->param('tab') eq "scenarios") {
+    if (($cgi->param('tab') // '') eq "scenarios") {
 	$tabview->default($scenario_tab_num);
     }
   }
@@ -983,7 +983,7 @@ sub load_subsystem_spreadsheet {
 	  $cluster_colors_alround->{ $i } = $col;
 	}
  	else {
- 	  $cluster_colors_alround->{ $i } = $colors->[ scalar( keys( %$cluster_colors_alround ) ) ];
+ 	  $cluster_colors_alround->{ $i } = $colors->[ scalar( keys( %$cluster_colors_alround ) ) % scalar( @$colors ) ];
 	  $leghash->{ $item } = $cluster_colors_alround->{ $i };
  	}
 	$i++;
@@ -1068,7 +1068,7 @@ sub load_subsystem_spreadsheet {
     my $variant = $spreadsheet_hash->{ $g }->{ 'variant' };
 
     # do not display unknown variants
-    next if ($variant eq '??');
+    next if (($variant // '') eq '??');
     my $highlight = undef;
     my $ordering = 0;
     if ($self->is_rast) {
@@ -1081,7 +1081,7 @@ sub load_subsystem_spreadsheet {
     my $cell = { data => $g };
     if (defined $highlight) { $cell->{highlight} = $highlight; }
     my $active = 'yes';
-    if ($variant eq '-1' or $variant eq '*-1' or $variant eq '0') {
+    if (($variant // '') eq '-1' or $variant eq '*-1' or $variant eq '0') {
       $active = 'no';
     }
     push( @$new_row, $cell);
@@ -1178,7 +1178,7 @@ sub load_subsystem_spreadsheet {
 	    my $peg_link = "<a href='".$application->url."?page=Annotation&feature=$peg' target=_blank>$n</a>".$pegfnum;
 	    if ( exists( $peg_to_color->{ $peg } ) ) {
 	      unless ( defined( $cluster_colors->{ $peg_to_color->{ $peg } } ) ) {
-		$cluster_colors->{ $peg_to_color->{ $peg } } = $colors->[ scalar( keys( %$cluster_colors ) ) ];
+		$cluster_colors->{ $peg_to_color->{ $peg } } = $colors->[ scalar( keys( %$cluster_colors ) ) % scalar( @$colors ) ];
 	      }
 	      $cluster_num = scalar( keys( %$cluster_colors ) );
 	      $num_clustered++;
@@ -1221,11 +1221,11 @@ sub load_subsystem_spreadsheet {
   }
 
   # sort the table by taxonomy then organism
-  @$pretty_spreadsheet = sort { $a->[2] cmp $b->[2] } @$pretty_spreadsheet;
+  @$pretty_spreadsheet = sort { ($a->[2] // '') cmp ($b->[2] // '') } @$pretty_spreadsheet;
     
   # add neighbor column if rast org
   if ($self->is_rast) {
-    @$pretty_spreadsheet = sort { $b->[0] cmp $a->[0] || $a->[2] cmp $b->[2] } @$pretty_spreadsheet;
+    @$pretty_spreadsheet = sort { $b->[0] cmp $a->[0] || ($a->[2] // '') cmp ($b->[2] // '') } @$pretty_spreadsheet;
     unshift(@$table_columns, { name => 'private organisms', sortable => 1, visible => 0, show_control => 1 });
   }
 
@@ -1236,7 +1236,7 @@ sub load_subsystem_spreadsheet {
       $col = 1;
     }
     my $org_id = $row->[$col]->{data};
-    $row->[$col]->{data} = "<a href='".$application->url."?page=Organism&organism=".$org_id."'>".$gname2id->{$org_id}." ($org_id)</a>";
+    $row->[$col]->{data} = "<a href='".$application->url."?page=Organism&organism=".$org_id."'>".($gname2id->{$org_id} // $org_id)." ($org_id)</a>";
   }
 
   # push pattern column
@@ -2050,10 +2050,10 @@ sub color_kegg_map
 		    if (exists $org_reactions->{$reaction}) {
 			my @peg_list = $fig->seqs_with_role($role, "", $organism);
 			next if scalar @peg_list == 0;
-			push @roles_strings, $subsystem->get_abbr_for_role($role).": $role (@peg_list)";
+			push @roles_strings, ($subsystem->get_abbr_for_role($role) // '').": $role (@peg_list)";
 		    }
 		    else {
-			push @roles_strings, $subsystem->get_abbr_for_role($role).": $role";
+			push @roles_strings, ($subsystem->get_abbr_for_role($role) // '').": $role";
 		    }
 		}
 
@@ -2265,7 +2265,7 @@ sub color_kegg_map
 
 	foreach my $reaction (keys %leftover_reactions)
 	{
-	    my @roles_strings = map { $subsystem->get_abbr_for_role($_).": $_" } @{$all_reactions{$reaction}};
+	    my @roles_strings = map { ($subsystem->get_abbr_for_role($_) // '').": $_" } @{$all_reactions{$reaction}};
 	    my $table_row = [];
 	    push @$table_row, { data => "<a href=http://www.genome.ad.jp/dbget-bin/www_bget?rn+$reaction target='_blank'>$reaction</a>", tooltip => join ("<br/>", @roles_strings) };
 	    my @reactants = $fig->reaction2comp($reaction,0);

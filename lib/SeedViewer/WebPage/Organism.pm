@@ -2,8 +2,6 @@ package SeedViewer::WebPage::Organism;
 
 use base qw( WebPage );
 
-1;
-
 use strict;
 use warnings;
 
@@ -12,6 +10,7 @@ use Tracer;
 use Data::Dumper;
 use WebComponent::WebGD;
 use WebColors;
+use GenomeTypeObject;
 use SeedViewer::SeedViewer;
 
 =pod
@@ -73,13 +72,26 @@ sub output {
   }
 
   # get cgi params
+  # SECURITY: $genome is untrusted CGI input. It is interpolated unescaped into
+  # HTML and into JavaScript string literals at several points below (menu URLs,
+  # chart onclick handlers, etc.), so it is an HTML/JS injection surface. It is
+  # effectively constrained in practice (an invalid id yields no $fig and an
+  # early return, and ids are normally \d+\.\d+), but that is not validation.
+  # Treat as needing explicit validation/escaping in a security pass.
   my $genome = $cgi->param('organism');
 
   unless (defined($genome)) {
     $application->redirect('OrganismSelect');
     $application->add_message('info', 'Redirected from Organism page: No organism id given.');
-    $application->do_redirect(); 
+    $application->do_redirect();
     die 'cgi_exit';
+  }
+
+  # Reject organism IDs that don't match the expected \d+\.\d+ format.
+  # This blocks SQL injection before any value reaches the database layer.
+  unless ($genome =~ /^\d+\.\d+$/) {
+    $application->add_message('warning', 'Invalid organism id');
+    return "";
   }
   
   # set up the menu
@@ -100,18 +112,22 @@ sub output {
   # get genome statistics data
   my $num_ss         = 0;
   my $num_contigs    = scalar($fig->all_contigs($genome));
-  my $num_basepairs  = $fig->genome_szdna($genome);
+  my $num_basepairs  = $fig->genome_szdna($genome) // 0;
   while ($num_basepairs =~ s/(\d+)(\d{3})+/$1,$2/) {}
-  my $genome_name    = $fig->genus_species($genome);
-  my $genome_domain  = $fig->genome_domain($genome);
-  my $genome_cds     = $fig->genome_pegs($genome);
-  my $genome_rnas    = $fig->genome_rnas($genome);
-  my $genome_version = $fig->genome_version($genome);
-  my $genome_taxonomy = $fig->taxonomy_of($genome);
+  my $genome_name    = $fig->genus_species($genome) // '';
+  my $genome_domain  = $fig->genome_domain($genome) // '';
+  my $genome_cds     = $fig->genome_pegs($genome) // 0;
+  my $genome_rnas    = $fig->genome_rnas($genome) // 0;
+  my $genome_version = $fig->genome_version($genome) // '';
+  my $genome_taxonomy = $fig->taxonomy_of($genome) // '';
 
   my $Plant_Species = $genome_taxonomy =~ /viridiplantae/i ? 1 : 0;
 
   # parse taxonomy id
+  # ROBUSTNESS: $1 is used without checking that the match succeeded; if $genome
+  # ever lacked digits, $1 would hold a stale value from a prior match (or be
+  # undef, warning under 'use warnings'). Genome ids always contain digits today,
+  # so this is latent rather than active.
   $genome =~ /(\d+)/;
   my $tax_id = $1;
   if (($tax_id =~ /^[0]{6}/) or ($tax_id =~ /^[1]{6}/) or ($tax_id =~ /^[2]{6}/) or ($tax_id =~ /^[3]{6}/) or ($tax_id =~ /^[4]{6}/) or ($tax_id =~ /^[5]{6}/) or ($tax_id =~ /^[6]{6}/) or ($tax_id =~ /^[7]{6}/) or ($tax_id =~ /^[8]{6}/) or ($tax_id =~ /^[9]{6}/)) {
@@ -242,13 +258,27 @@ sub output {
     Trace("$hypo_sub hypotheticals, $nothypo_sub names.") if T(3);
     my $table_data;
     
-    # fill a tree structure with the data
-    my $color_set = WebColors::get_palette('excel');
+    # Build the subsystem-category tree (the legend) and the pie chart so that a
+    # given category gets the same color in both. The pie component is the single
+    # source of truth: we read its color palette and its number of reserved (UI)
+    # colors, then color each legend swatch with the exact color the pie will draw
+    # for that category. This replaces an earlier private copy of the palette and
+    # offset here, which could (and did) drift out of step with the pie.
+    #
+    # Categories are sorted so colors and legend order are stable across page
+    # loads (hash key order is randomized per process since Perl 5.18).
+    my $pie = $application->component('SubsystemPieChart');
+    my $pie_palette = $pie->color_set;
+    # reserved offset: ask the component, falling back to 6 for an older PieChart
+    # that predates the reserved_colors() accessor and hard-coded that value.
+    my $reserved = $pie->can('reserved_colors') ? $pie->reserved_colors : 6;
+    my @superclasses = sort keys(%$ss_class);
+
     my $tree = $application->component('SubsystemTree');
     my $color_index = 0;
-    foreach my $superclass (keys(%$ss_class)) {
+    foreach my $superclass (@superclasses) {
       my $box = new WebGD(10, 10);
-      my $chosenSet = $color_set->[$color_index] || [51,51,51];
+      my $chosenSet = $pie_palette->[$color_index + $reserved] // [51,51,51];
       $box->colorResolve(@$chosenSet);
       my $n1 = $tree->add_node( { label => "<img src='" . $box->image_src()."'>&nbsp;&nbsp;".$superclass } );
       foreach my $subclass (keys(%{$ss_class->{$superclass}})) {
@@ -287,10 +317,13 @@ sub output {
       $color_index++;
     }
     
-    # fill a pie chart with the counts
-    my $pie = $application->component('SubsystemPieChart');
+    # Fill the pie chart with the counts, in the SAME order as the legend and
+    # including every category (zero-count ones too). PieChart draws slice $i with
+    # palette color ($i + reserved), advancing that index even for slices too
+    # small to render, so keeping zero-count categories in place keeps the slice
+    # colors aligned with the legend swatches above. ($pie was created above.)
     my $pie_data = [];
-    foreach my $superclass (keys(%$ss_counts)) {
+    foreach my $superclass (@superclasses) {
       push(@$pie_data, { data => $ss_counts->{$superclass}, title => $superclass });
     }
     $pie->data($pie_data);
@@ -303,6 +336,9 @@ sub output {
     my $bar_chart = $application->component('SubsystemBarChart');
     $bar_chart->show_axes(0);
     $bar_chart->show_titles(0);
+    # SECURITY: $genome (untrusted CGI input, see output()) is interpolated into
+    # a JavaScript string literal here without escaping -- representative of the
+    # injection sinks for this value throughout the page.
     $bar_chart->onclicks( [ "window.top.location=\"?page=BrowseGenome&organism=$genome&tabular=1&noss=1\"", "tab_view_select(\"" . $sstv->id() . "\", 1);" ] );
     $bar_chart->data([ [ { title => "<table><tr><th>not in Subsystem</th></tr><tr><td>total (".($nothypo_nosub+$hypo_nosub).")</td></tr><tr><td>non-hypothetical ($nothypo_nosub)</td></tr><tr><td>hypothetical ($hypo_nosub)</td></tr></table>", data => $hypo_nosub + $nothypo_nosub, color => [80,116,154] },
 			 { title => "<table><tr><th>in Subsystem</th></tr><tr><td>total (".($nothypo_sub+$hypo_sub).")</td></tr><tr><td>non-hypothetical ($nothypo_sub)</td></tr><tr><td>hypothetical ($hypo_sub)</td></tr></table>", data => $hypo_sub + $nothypo_sub, color => [93,166,104] } ] ]);
@@ -412,6 +448,9 @@ function show_additional () {
       my $ii = 0;
       foreach my $attribute (@attribute_info) {
 	$attribute->[1] =~ s/_/ /g;
+	# SECURITY: genome attribute name/value are rendered into HTML unescaped.
+	# Attribute data comes from curated sources today, but stored values are an
+	# HTML injection surface and should be escaped in a security pass.
 	$general_organism_data .= "<tr class='hideme' id='additional_info_$ii'><th>".$attribute->[1]."</th><td>".$attribute->[2]."</td></tr>";
 	$ii++;
       }
@@ -423,7 +462,7 @@ function show_additional () {
   $html .= "<table><tr><td width=550px>".$general_organism_data."</td><td>".$organism_info."</td></tr></table>";
   $html .= $subsystem_information;
 
-  my $gto_file = $fig->organism_directory($genome) . "/proc_genome.gto";
+  my $gto_file = ($fig->organism_directory($genome) // '') . "/proc_genome.gto";
   # warn "GTO File = $gto_file\n";
   if (-f $gto_file)
   {
@@ -436,6 +475,15 @@ function show_additional () {
 
   return $html;
 }
+
+=item * B<add_gto_metadata> (I<application>, I<gto_file>)
+
+Function (not a method). Loads a L<GenomeTypeObject> from I<gto_file> and returns
+an HTML fragment describing the genome's classification results, or an empty /
+undef result if the file cannot be loaded or holds no classifications. Load
+failures are reported via C<warn> and produce no output.
+
+=cut
 
 sub add_gto_metadata
 {
@@ -457,7 +505,6 @@ sub add_gto_metadata
     my $gto;
     eval {
 	$gto = GenomeTypeObject->create_from_file($gto_file);
-	print STDERR "Load gto data from $gto_file\n";
     };
     
     if ($@ || !$gto)
@@ -523,6 +570,15 @@ sub add_gto_metadata
 }
 
 
+=item * B<check_white_list> (I<list>)
+
+Function (not a method). Given a reference to a list of genome attribute records,
+returns those whose key is in an internal white list, ordered by the white
+list's defined priority, with a leading 'GENOME' stripped and the key
+lower-cased for display.
+
+=cut
+
 sub check_white_list {
   my ($list) = @_;
   
@@ -566,6 +622,15 @@ sub check_white_list {
   return @white_list;
 }
 
+=item * B<recalculate_subsystems> ()
+
+Action handler. For an authorized annotator, recomputes the subsystems of the
+current genome from its proposed functions, moving the new result into place and
+keeping the previous version as a backup. Progress and errors are reported via
+the application message facility.
+
+=cut
+
 sub recalculate_subsystems {
   my ($self) = @_;
   
@@ -586,6 +651,11 @@ sub recalculate_subsystems {
     } else {
 	mkdir $triangle;
 	my $err = "$FIG_Config::temp/rapid_subsystem_inference.err.$$." . time;
+	# SECURITY: this builds a shell command with interpolated paths and runs it
+	# via system() in a shell context (note the pipe and glob). $org reaches this
+	# through $fig->organism_directory and is gated by user_can_annotate_genome
+	# and the normal \d+\.\d+ id form, so risk is low, but it is shell-context
+	# string interpolation and should use list-form/escaped exec in a hardening pass.
 	my $cmd = "cat ".$fig->organism_directory($org)."/proposed_*functions | $FIG_Config::bin/rapid_subsystem_inference $triangle 2> $err";
 	if (system ($cmd) != 0)
 	{
@@ -622,6 +692,14 @@ sub recalculate_subsystems {
   return 1;
 }
 
+=item * B<revert_ss_calculation> ()
+
+Action handler. For an authorized annotator, reverts the current genome's
+subsystems to the backup created by a previous L</recalculate_subsystems>, if
+one exists.
+
+=cut
+
 sub revert_ss_calculation {
   my ($self) = @_;
 
@@ -640,6 +718,10 @@ sub revert_ss_calculation {
     if (-d $backup) {
       my $triangle = $fig->organism_directory($org)."/Subsystems~~";
       my $real = $fig->organism_directory($org)."/Subsystems";
+      # ROBUSTNESS: this swaps directories with a three-step rename sequence that
+      # is not atomic. If a later rename fails after an earlier one succeeded, the
+      # genome's Subsystems directory can be left in an inconsistent state (and the
+      # code die()s mid-sequence). A safer scheme would stage and pivot atomically.
       if (rename($real, $triangle)) {
 	rename($backup, $real) or die "Error moving backup to real: $@";
 	rename($triangle, $backup) or die "Error moving real to backup: $@";
@@ -656,6 +738,14 @@ sub revert_ss_calculation {
   
   return 1;
 }
+
+=item * B<delete_feature> ()
+
+Action handler. Deletes the feature named by the C<feature> CGI parameter from
+the current genome, provided the user is authorized to annotate it and the
+feature belongs to a RAST organism.
+
+=cut
 
 sub delete_feature {
   my ($self) = @_;
@@ -696,3 +786,9 @@ sub delete_feature {
   $fig->delete_feature($user->login, $feature);
   $application->add_message('info', "The feature $feature has been deleted.");
 }
+
+=back
+
+=cut
+
+1;

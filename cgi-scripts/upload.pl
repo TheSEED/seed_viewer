@@ -30,6 +30,9 @@ print $cgi->header();
 if (($cgi->param('upload_list') || ($cgi->param('upload_string_list'))) && $cgi->param('upload_table_id')) {
     
     my $tid = $cgi->param('upload_table_id');
+    # Security: $tid is reflected into the page (incl. an inline JS string);
+    # strip HTML/JS-breaking characters so it cannot inject markup (CWE-79).
+    if (defined($tid)) { $tid =~ s/[<>"']//g; $cgi->param('upload_table_id', $tid); }
 
     # parse the uploaded data
     my @lines = ();

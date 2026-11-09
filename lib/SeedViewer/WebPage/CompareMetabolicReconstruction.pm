@@ -75,6 +75,15 @@ sub output {
     return "";
   }
 
+  # Security: validate organism ids against the expected genome-id format
+  # before they are reflected into the page (CWE-79). Reject anything else.
+  for my $g (grep { defined($_) && $_ ne '' } ($genome_a, $genome_b)) {
+    unless ($g =~ /^\d+\.\d+$/) {
+      $application->add_message('warning', 'Invalid organism id');
+      return "";
+    }
+  }
+
   my $fig = $application->data_handle('FIG');
 
   # check if we have a valid fig
@@ -115,7 +124,9 @@ function select_other () {
 
     # write header
     my $url = $application->url();
-    $html = $js."<h2>Compare Metabolic Reconstruction of <a href='$url?page=Organism&organism=$genome_a'>$genome_name_a</a> (A) and <a href='$url?page=Organism&organism=$genome_b'>$genome_name_b</a> (B) <input type='button' class='button' onclick='select_other();' value='select other' id='org_select_switch'></h2>";
+    my $esc_genome_a = CGI::escapeHTML($genome_a);
+    my $esc_genome_b = CGI::escapeHTML($genome_b);
+    $html = $js."<h2>Compare Metabolic Reconstruction of <a href='$url?page=Organism&organism=$esc_genome_a'>".CGI::escapeHTML($genome_name_a)."</a> (A) and <a href='$url?page=Organism&organism=$esc_genome_b'>".CGI::escapeHTML($genome_name_b)."</a> (B) <input type='button' class='button' onclick='select_other();' value='select other' id='org_select_switch'></h2>";
 
     # write explanation
     $html .= "<div style='text-align: justify; width: 800px;'><p>The comparison of metabolic reconstruction will allow you to compare the <b>functioning parts</b> of two organisms. The notion of functioning is defined by having genes for all the functional roles that compose a variant of a subsystem.</p><p>The table below will list all genes which were associated with a subsytem in the respective organism. The first column will allow you to filter those that are unique to one organism, to the other, or common to both. The column 'SS active' will show you whether the subsystem this gene has been classified into was found to have an active variant in this organism.</p><p>If the gene cannot be found, you can click the find button in that cell to search for it.</p></div>";
